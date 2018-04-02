@@ -1,0 +1,3 @@
+﻿  FileManager.cpp
+c:\users\owner\source\repos\clientupdater\clientupdater\filemanager.h(17): warning C4091: 'static ': ignored on left of 'FileManager' when no variable is declared
+  ClientUpdater.vcxproj -> C:\Users\Owner\source\repos\ClientUpdater\Debug\ClientUpdater.exe
