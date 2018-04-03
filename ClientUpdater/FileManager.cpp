@@ -16,32 +16,38 @@ std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
 	int amoutOfFiles = 0;
 	int currentAmount = 0;
 
+
+
+
 	for (auto& fileDir : fs::recursive_directory_iterator(a_dir))
 	{
 		amoutOfFiles++;
 	}
 
-
+	std::string fileData;
 	//iterators over ever folder and every subfolder
 	for (auto& fileDir : fs::recursive_directory_iterator(a_dir))
 	{
 		std::ifstream inFile(fileDir);
 
-		std::string fileData((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+		//std::string fileData((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+		inFile >> fileData;
 		inFile.close();
 
 		std::string name = fileDir.path().string();
-		hashFiles.push_back(HashFile(name, fileData));
+
+		if (name.substr(a_dir.size(), a_dir.size() - name.size()) != "\FileStructure.txt")
+		{
+			hashFiles.push_back(HashFile(name.substr(a_dir.size(), a_dir.size() - name.size()), fileData));
+		}
 
 		currentAmount++;
-		system("CLS");
 
-		std::cout << currentAmount << "/" << amoutOfFiles << std::endl;
-
+		fileData.clear();
 	}
 
 
-	assert(hashFiles.size() > 0);
+	//assert(hashFiles.size() > 0);
 	return hashFiles;
 
 }
@@ -97,6 +103,12 @@ std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile> client
 		}
 	}
 
+	return returnArr;
+}
+
+std::vector<HashFile> FileManager::FindFilesToDelete(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr)
+{
+	std::vector<HashFile> returnArr = FindMissingFiles(serverArr, clientArr);
 	return returnArr;
 }
 

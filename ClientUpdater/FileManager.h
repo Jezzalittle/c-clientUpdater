@@ -13,6 +13,7 @@ public:
 	static void CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, std::string a_dir);
 	static std::vector<HashFile> ReadFromfileStucFileByDir(std::string a_dir);
 	static std::vector<HashFile> FindMissingFiles(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr);
+	static std::vector<HashFile> FindFilesToDelete(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr);
 
 };
 
