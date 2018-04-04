@@ -11,6 +11,7 @@ void NetworkManager::StartServer(const unsigned short port)
 {
 	RakNet::RakPeerInterface* peerInterface = nullptr;
 
+
 	std::string returnString;
 
 	std::cout << "Opening Socket On Port " << port << std::endl;
@@ -24,32 +25,10 @@ void NetworkManager::StartServer(const unsigned short port)
 
 	RakNet::FileListTransfer* ftp = RakNet::FileListTransfer::GetInstance();
 
-	RakNet::Packet* packet = nullptr;
-
-	while (true)
-	{
-		std::cout << "Waiting For A Connection\n";
-
-		for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
-		{
-			switch (packet->data[0])
-			{
-			case ID_NEW_INCOMING_CONNECTION:
-				std::cout << "A connection is incoming.\n";
-				StartWaitingForFileToDownload(packet->systemAddress);
-				break;
-			default:
-				assert(true);
-				break;
-			}
-		}
-	}
-
-	system("cls");
-
+	std::cout << "Starting Server\n";
 }
 
-void NetworkManager::StartNetworkSocketAsClient(std::string ip, const unsigned short port)
+void NetworkManager::StartClientConnectionToServer(std::string ip, const unsigned short port)
 {
 	RakNet::SocketDescriptor sd;
 	RakNet::RakPeerInterface* rakPeerInterface = RakNet::RakPeerInterface::GetInstance();
@@ -59,20 +38,91 @@ void NetworkManager::StartNetworkSocketAsClient(std::string ip, const unsigned s
 	std::cout << "Connecting to server at: " << ip.c_str() << std::endl;
 
 	RakNet::ConnectionAttemptResult res = rakPeerInterface->Connect(ip.c_str(), port, nullptr, 0);
-	
-	if (res != RakNet::CONNECTION_ATTEMPT_STARTED) 
-	{ 
-		std::cout << "Unable to start connection, Error number: " << res << std::endl;
-		assert(true);
+
+	assert(("Unable to start connection, Error number: ", res != RakNet::CONNECTION_ATTEMPT_STARTED));
+}
+
+std::vector<HashFile> NetworkManager::RunServer()
+{
+	std::vector<HashFile> returnArr;
+
+	std::thread serverUpdate([&](std::vector<HashFile> arr)
+	{
+		UpdateServer(arr);
+
+	}, returnArr);
+
+	serverUpdate.join();
+
+	return returnArr;
+
+}
+
+
+
+void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
+{
+	int start = clock();
+	double diff;
+
+	RakNet::Packet* packet = nullptr;
+	RakNet::RakPeerInterface* peerInterface = RakNet::RakPeerInterface::GetInstance();
+	std::vector<HashFile> newFileArr;
+
+	while (true)
+	{
+
+		diff = (clock() - start) / (double)(CLOCKS_PER_SEC);
+
+		if (diff > 3.0)
+		{
+			start = clock();
+
+			std::cout << "Checking For Packets\n";
+
+
+			for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
+			{
+				RakNet::RakString str;
+				RakNet::BitStream bsIn(packet->data, packet->length, false);
+
+				switch (packet->data[0])
+				{
+				case ID_NEW_INCOMING_CONNECTION:
+					std::cout << "A connection is incoming.\n";
+					//	StartWaitingForFileToDownload(packet->systemAddress);
+					break;
+				case ID_DISCONNECTION_NOTIFICATION:
+					std::cout << "A client has disconnected.\n";
+					break;
+				case ID_CONNECTION_LOST:
+					std::cout << "A client lost the connection.\n";
+					break;
+				case ID_GET_FILE_MSG:
+					std::cout << "Getting File From Client\n";
+
+					bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+					bsIn.Read(str);
+					if (str.C_String()[0] != '|')
+					{
+						newFileArr.push_back(std::string(str.C_String()));
+					}
+					else
+					{
+						returnArr = newFileArr;
+						return;
+					}
+					break;
+				default:
+					std::cout << "Received a message with a unknown id: " << packet->data[0];
+					break;
+				}
+			}
+		}
 	}
 }
 
-void NetworkManager::StartWaitingForFileToDownload(RakNet::SystemAddress id)
-{
-	RakNet::FileListTransfer* ftp = RakNet::FileListTransfer::GetInstance();
-	RakNet::FileListTransferCBInterface* file;
-	ftp->SetupReceive(file, true, id);
-}
+
 
 
 
@@ -80,3 +130,9 @@ void NetworkManager::StartWaitingForFileToDownload(RakNet::SystemAddress id)
 NetworkManager::~NetworkManager()
 {
 }
+
+
+
+
+
+

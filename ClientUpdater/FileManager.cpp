@@ -54,7 +54,7 @@ std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
 
 void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, std::string a_dir)
 {
-	std::ofstream outfile(a_dir + "\\FileStructure.txt");
+	std::ofstream outfile(a_dir);
 
 	for (auto& hashFile : hashFileArr)
 	{
