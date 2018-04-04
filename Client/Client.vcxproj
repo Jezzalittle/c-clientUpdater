@@ -90,11 +90,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)/ClientUpdater</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\ClientUpdater; $(SolutionDir)\dependencies\Raknet\includes; %(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\Raknet\libs\Debug;$(SolutionDir)\dependencies\ClientUpdater\libs\Debug%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(SolutionDir)\dependencies\Raknet\libs\Debug\RakNet_d.lib;$(SolutionDir)\dependencies\ClientUpdater\libs\Debug\ClientUpdater_d.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,13 +123,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)/ClientUpdater</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\ClientUpdater; $(SolutionDir)\dependencies\Raknet\includes; %(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\Raknet\libs\Release;$(SolutionDir)\dependencies\ClientUpdater\libs\Release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(SolutionDir)\dependencies\Raknet\libs\Release\RakNet.lib;$(SolutionDir)\dependencies\ClientUpdater\libs\Release\ClientUpdater.lib;ws2_32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

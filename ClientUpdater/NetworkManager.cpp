@@ -23,36 +23,48 @@ void NetworkManager::StartServer(const unsigned short port)
 	peerInterface->Startup(32, &sd, 1);
 	peerInterface->SetMaximumIncomingConnections(32);
 
-	RakNet::FileListTransfer* ftp = RakNet::FileListTransfer::GetInstance();
-
 	std::cout << "Starting Server\n";
 }
 
-void NetworkManager::StartClientConnectionToServer(std::string ip, const unsigned short port)
+void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigned short port)
 {
 	RakNet::SocketDescriptor sd;
 	RakNet::RakPeerInterface* rakPeerInterface = RakNet::RakPeerInterface::GetInstance();
 
 	rakPeerInterface->Startup(1, &sd, 1);
 
-	std::cout << "Connecting to server at: " << ip.c_str() << std::endl;
+	std::cout << "Connecting to server at: " << ip << std::endl;
 
-	RakNet::ConnectionAttemptResult res = rakPeerInterface->Connect(ip.c_str(), port, nullptr, 0);
+	RakNet::ConnectionAttemptResult res = rakPeerInterface->Connect(ip, port, nullptr, 0);
 
-	assert(("Unable to start connection, Error number: ", res != RakNet::CONNECTION_ATTEMPT_STARTED));
+	if (res != RakNet::CONNECTION_ATTEMPT_STARTED)
+	{
+		std::cout << "Unable to start connection, Error number: " << res << std::endl;
+		system("pause");
+	}
+
+	while (true)
+	{
+		RakNet::BitStream bs;
+		bs.Write((RakNet::MessageID)NetworkMsg::ID_GET_FILE_MSG); 
+		bs.Write("Ping!"); 
+		
+		rakPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+
+	}
 }
 
 std::vector<HashFile> NetworkManager::RunServer()
 {
 	std::vector<HashFile> returnArr;
 
-	std::thread serverUpdate([&](std::vector<HashFile> arr)
-	{
-		UpdateServer(arr);
+	//std::thread serverUpdate([&](std::vector<HashFile> arr)
+	//{
+	UpdateServer(returnArr);
 
-	}, returnArr);
+	//}, returnArr);
 
-	serverUpdate.join();
+	//serverUpdate.join();
 
 	return returnArr;
 
@@ -72,11 +84,11 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 	while (true)
 	{
 
-		diff = (clock() - start) / (double)(CLOCKS_PER_SEC);
+		//diff = (clock() - start) / (double)(CLOCKS_PER_SEC);
 
-		if (diff > 3.0)
-		{
-			start = clock();
+		//if (diff > 3.0)
+		//{
+		//	start = clock();
 
 			std::cout << "Checking For Packets\n";
 
@@ -99,7 +111,12 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 					std::cout << "A client lost the connection.\n";
 					break;
 				case ID_GET_FILE_MSG:
-					std::cout << "Getting File From Client\n";
+					bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+					bsIn.Read(str);
+					std::cout << str.C_String() << std::endl;
+
+					system("pause");
+					/*	std::cout << "Getting File From Client\n";
 
 					bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 					bsIn.Read(str);
@@ -111,14 +128,14 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 					{
 						returnArr = newFileArr;
 						return;
-					}
+					}*/
 					break;
 				default:
 					std::cout << "Received a message with a unknown id: " << packet->data[0];
 					break;
 				}
 			}
-		}
+		//}
 	}
 }
 

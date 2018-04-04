@@ -11,6 +11,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server", "Server\Server.vcx
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client", "Client\Client.vcxproj", "{F102D641-7D82-4EBF-B17C-92284552365D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C1A8DF4A-A4A6-47BA-B85F-05D8744DE545} = {C1A8DF4A-A4A6-47BA-B85F-05D8744DE545}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

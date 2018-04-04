@@ -10,7 +10,7 @@
 #include <vector>
 #include <chrono>
 #include "HashFile.h"
-#include "FileManager.h"
+
 
 
 class NetworkManager
@@ -19,7 +19,7 @@ public:
 	NetworkManager();
 
 	void StartServer(const unsigned short port);
-	void StartClientConnectionToServer(std::string ip, const unsigned short port);
+	void StartClientConnectionToServer(const char* ip, const unsigned short port);
 	std::vector<HashFile> RunServer();
 
 	~NetworkManager();
