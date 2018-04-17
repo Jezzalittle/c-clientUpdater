@@ -42,16 +42,17 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 		std::cout << "Unable to start connection, Error number: " << res << std::endl;
 		system("pause");
 	}
+	system("pause");
 
-	while (true)
-	{
+	//while (true)
+	//{
 		RakNet::BitStream bs;
 		bs.Write((RakNet::MessageID)NetworkMsg::ID_GET_FILE_MSG); 
 		bs.Write("Ping!"); 
-		
+	//	
 		rakPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 
-	}
+	//}
 }
 
 std::vector<HashFile> NetworkManager::RunServer()
@@ -90,7 +91,7 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 		//{
 		//	start = clock();
 
-			std::cout << "Checking For Packets\n";
+		//	std::cout << "Checking For Packets\n";
 
 
 			for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
