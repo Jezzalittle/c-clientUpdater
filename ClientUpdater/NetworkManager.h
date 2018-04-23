@@ -21,11 +21,16 @@ public:
 	void StartServer(const unsigned short port);
 	void StartClientConnectionToServer(const char* ip, const unsigned short port);
 	std::vector<HashFile> RunServer();
+	void RunClient();
 
 	~NetworkManager();
+
 private:
 
 	void UpdateServer(std::vector<HashFile>&);
+	void UpdateClient();
+
+	class RakNet::RakPeerInterface * peerInterface;
 
 	enum NetworkMsg
 	{
