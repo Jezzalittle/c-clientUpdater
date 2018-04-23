@@ -3,7 +3,6 @@
 #include <FileListTransfer.h>
 #include <FileListTransferCBInterface.h>
 #include <MessageIdentifiers.h>
-#include <iostream>
 #include <string>
 #include <thread>
 #include <stdio.h>
@@ -19,7 +18,7 @@ public:
 	NetworkManager();
 
 	void StartServer(const unsigned short port);
-	void StartClientConnectionToServer(const char* ip, const unsigned short port);
+	void StartClientConnectionToServer(const char* ip, const unsigned short port, std::string dir);
 	std::vector<HashFile> RunServer();
 	void RunClient();
 
@@ -31,10 +30,14 @@ private:
 	void UpdateClient();
 
 	class RakNet::RakPeerInterface * peerInterface;
+	class RakNet::FileListTransfer* fileListTransfer;
+	class RakNet::FileList* fileList;
 
 	enum NetworkMsg
 	{
-		ID_GET_FILE_MSG = ID_USER_PACKET_ENUM + 1
+
+		ID_SENDFILE = ID_USER_PACKET_ENUM + 1,
+		
 	};
 
 };
