@@ -1,3 +1,4 @@
+
 #pragma once
 #include <RakPeerInterface.h>
 #include <FileListTransfer.h>
@@ -13,40 +14,6 @@
 #include <fstream>
 
 
-class FileCB : public RakNet::FileListTransferCBInterface
-{
-public:
-	bool OnFile(OnFileStruct* onFileStruct) 
-	{
-
-		std::cout << "did it work?\n";
-
-		//std::string("TempFileStucFile" + onFileStruct->senderSystemAddress.ToString() + ".txt")
-		std::string systemAdress = onFileStruct->senderSystemAddress.ToString();
-		std::ofstream outputFile("TempFileStucFile" + systemAdress + ".txt");
-
-		outputFile << onFileStruct->fileData;
-
-		outputFile.close();
-
-		return true;
-	}
-
-	virtual void OnFileProgress(FileProgressStruct *fps) 
-	{
-
-		std::cout << fps->partCount << "/" << fps->partTotal << std::endl;
-	}
-
-	virtual bool OnDownloadComplete(DownloadCompleteStruct *dcs) 
-	{
-
-		std::cout << "Download complete.\n";
-
-		return false;
-	}
-
-};
 
 
 class TestFileListProgress : public RakNet::FileListProgress
@@ -73,32 +40,101 @@ class TestFileListProgress : public RakNet::FileListProgress
 class NetworkManager
 {
 public:
-	NetworkManager();
+
+	static NetworkManager& GetInstance()
+	{
+		static NetworkManager instance;
+		return instance;
+	}
+	NetworkManager(NetworkManager const&) = delete;
+	void operator=(NetworkManager const&) = delete;
+
+	void Initialise(std::string a_path);
 
 	void StartServer(const unsigned short port);
-	void StartClientConnectionToServer(const char* ip, const unsigned short port, std::string dir);
+	void StartClientConnectionToServer(const char* ip, const unsigned short port);
 	std::vector<HashFile> RunServer();
 	void RunClient();
 
-	~NetworkManager();
+
+	void SetPath(std::string a_path)
+	{
+		path = a_path;
+	}
+	std::string GetPath()
+	{
+		return path;
+	}
+
+
+
 
 private:
+
+	NetworkManager() { /*...*/ };
+
+	std::string path;
+
 
 	void UpdateServer(std::vector<HashFile>&);
 	void UpdateClient();
 
-	class RakNet::RakPeerInterface * peerInterface;
+	RakNet::RakPeerInterface * peerInterface;
 
 	RakNet::FileListTransfer fileListTransfer;
 
 	RakNet::FileList fileList;
 
+
 	enum NetworkMsg
 	{
 
 		ID_SENDFILE = ID_USER_PACKET_ENUM + 1,
-		
+
 	};
 
 };
 
+class FileCB : public RakNet::FileListTransferCBInterface
+{
+public:
+	bool OnFile(OnFileStruct* onFileStruct)
+	{
+
+		printf("OnFile: %i. (100%%) %i/%i %s %ib / %ib\n",
+			onFileStruct->setID,
+			onFileStruct->fileIndex + 1,
+			onFileStruct->numberOfFilesInThisSet,
+			onFileStruct->fileName,
+			onFileStruct->byteLengthOfThisFile,
+			onFileStruct->byteLengthOfThisSet);
+
+
+		std::string filePath = NetworkManager::GetInstance().GetPath() + "\\FileStructure_copy.txt";
+
+		std::ofstream outFile(filePath, std::ios::out | std::ios::binary);
+
+
+
+		outFile.write(onFileStruct->fileData, onFileStruct->byteLengthOfThisFile);
+
+		outFile.close();
+
+		return true;
+	}
+
+	virtual void OnFileProgress(FileProgressStruct *fps)
+	{
+
+		std::cout << fps->partCount << "/" << fps->partTotal << std::endl;
+	}
+
+	virtual bool OnDownloadComplete(DownloadCompleteStruct *dcs)
+	{
+
+		std::cout << "Download complete.\n";
+
+		return false;
+	}
+
+};

@@ -7,15 +7,11 @@
 
 
 
-NetworkManager::NetworkManager()
+void NetworkManager::Initialise(std::string a_path)
 {
 	peerInterface = RakNet::RakPeerInterface::GetInstance();
-	fileListTransfer.AddCallback(new TestFileListProgress());
-
+	path = a_path;
 }
-
-
-
 
 
 void NetworkManager::StartServer(const unsigned short port)
@@ -36,12 +32,13 @@ void NetworkManager::StartServer(const unsigned short port)
 	std::cout << "Starting Server\n";
 
 	peerInterface->AttachPlugin(&fileListTransfer);
-
+	//fileListTransfer.AddCallback(&(TestFileListProgress()));
+	//peerInterface->SetSplitMessageProgressInterval(9);
 
 
 }
 
-void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigned short port, std::string dir)
+void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigned short port)
 {
 	RakNet::SocketDescriptor sd;
 
@@ -83,18 +80,24 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 
 	peerInterface->AttachPlugin(&fileListTransfer);
 
+//	fileListTransfer.AddCallback(&(TestFileListProgress()));
+	peerInterface->SetSplitMessageProgressInterval(9);
 
 
 
-	unsigned int fileLength = GetFileLength(dir.c_str());
+	std::string pathToFile = path + "\\FileStructure.txt";
+
+
+	unsigned int fileLength = GetFileLength(pathToFile.c_str());
 
 	if (fileLength == 0)
 	{
-		std::cout << "file " << dir << " not found\n";
+		std::cout << "file " << path << " not found\n";
 		assert(false);
 	}
 
-	fileList.AddFile(dir.c_str(), dir.c_str(), 0, fileLength, fileLength, FileListNodeContext(0, 0, 0, 0), false);
+
+	fileList.AddFile(pathToFile.c_str(), pathToFile.c_str(),FileListNodeContext(0, 0, 0, 0));
 
 
 
@@ -155,10 +158,10 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 	while (true)
 	{
 
-		//std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 
-
-
+		packet = nullptr;
+	
 
 		for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
 		{
@@ -279,13 +282,17 @@ void NetworkManager::UpdateClient()
 
 				returnID = (unsigned short)std::strtoul(str.c_str(), NULL, 0);
 
-				std::cout << returnID << std::endl;
 
-				fileListTransfer.Send(&fileList, peerInterface, packet->systemAddress, 0, HIGH_PRIORITY, 0, &incrementalReadInterface, 2000000);
+				//std::this_thread::sleep_for(std::chrono::seconds(5));
+
+				std::cout << fileList.fileList.Size() << std::endl;
 
 
-				//std::cout << "files have been sent\n";
+				fileListTransfer.Send(&fileList, peerInterface, packet->systemAddress, returnID, HIGH_PRIORITY, 0);
 
+
+				std::cout << "files have been sent\n";
+				std::cout << path << std::endl;
 			//	bs.Write((RakNet::MessageID)NetworkMsg::ID_SENDFILE);
 				
 			//	peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
@@ -303,9 +310,6 @@ void NetworkManager::UpdateClient()
 
 
 
-NetworkManager::~NetworkManager()
-{
-}
 
 
 
