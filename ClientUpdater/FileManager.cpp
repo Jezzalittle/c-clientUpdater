@@ -5,9 +5,11 @@
 #include <assert.h>
 #include <iostream>
 #include <fstream>  
+#include <thread>
 
 namespace fs = std::experimental::filesystem::v1;
 
+std::thread FileManager::m_readFromFileThread;
 
 
 std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
@@ -58,14 +60,15 @@ void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, 
 
 	for (auto& hashFile : hashFileArr)
 	{
-		outfile << hashFile.gethashValue()  << std::endl;
+		outfile << hashFile.gethashValue() << std::endl;
 	}
 
 	outfile.close();
 
 }
 
-std::vector<HashFile> FileManager::ReadFromfileStucFileByDir(std::string a_dir)
+
+void FileManager::ReadFromfileStucFileByDir(std::string a_dir)
 {
 	std::vector<HashFile> returnArr;
 	std::ifstream inFile;
@@ -79,7 +82,35 @@ std::vector<HashFile> FileManager::ReadFromfileStucFileByDir(std::string a_dir)
 			returnArr.push_back(HashFile(line));
 		}
 	}
-	return returnArr;
+}
+
+bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callbackFnc)
+{
+	if (m_readFromFileThread.joinable())
+	{
+		return false;
+	}
+
+	m_readFromFileThread = std::thread([=]()
+	{
+
+		std::vector<HashFile> returnArr;
+		std::ifstream inFile;
+		std::string line;
+
+		inFile.open(a_dir);
+		if (inFile.is_open())
+		{
+			while (std::getline(inFile, line))
+			{
+				returnArr.push_back(HashFile(line));
+			}
+		}
+
+		callbackFnc(std::move(returnArr));
+	});
+		return true;
+
 }
 
 std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr)

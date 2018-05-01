@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <vector>
 #include <chrono>
+#include "FileManager.h"
 #include "HashFile.h"
 #include <iostream>
 #include <fstream>
@@ -53,7 +54,8 @@ public:
 
 	void StartServer(const unsigned short port);
 	void StartClientConnectionToServer(const char* ip, const unsigned short port);
-	std::vector<HashFile> RunServer();
+	void SendMissingFilesToClient(std::vector<HashFile>& missingFiles);
+
 	void RunClient();
 
 
@@ -88,8 +90,8 @@ private:
 
 	enum NetworkMsg
 	{
-
 		ID_SENDFILE = ID_USER_PACKET_ENUM + 1,
+		ID_CLIENTFILESEND,
 
 	};
 

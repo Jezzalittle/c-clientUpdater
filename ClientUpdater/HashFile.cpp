@@ -8,7 +8,6 @@ HashFile::HashFile(std::string a_fileLocation, std::string a_fileData)
 	fileLocation = a_fileLocation;
 	hashValue = MD5(a_fileLocation).hexdigest();
 	hashValue += MD5(a_fileData).hexdigest();
-	//hashValue = fileLocation + " | " + fileLastModified;
 }
 
 HashFile::HashFile(std::string a_hash)
