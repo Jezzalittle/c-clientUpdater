@@ -9,7 +9,8 @@
 
 namespace fs = std::experimental::filesystem::v1;
 
-std::thread FileManager::m_readFromFileThread;
+std::thread FileManager::readFromFileThread;
+std::thread FileManager::deleteFileThread;
 
 
 std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
@@ -86,12 +87,12 @@ void FileManager::ReadFromfileStucFileByDir(std::string a_dir)
 
 bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callbackFnc)
 {
-	if (m_readFromFileThread.joinable())
+	if (readFromFileThread.joinable())
 	{
 		return false;
 	}
 
-	m_readFromFileThread = std::thread([=]()
+	readFromFileThread = std::thread([=]()
 	{
 
 		std::vector<HashFile> returnArr;
@@ -109,7 +110,7 @@ bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callb
 
 		callbackFnc(std::move(returnArr));
 	});
-		return true;
+	return true;
 
 }
 
@@ -139,8 +140,45 @@ std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile> client
 
 std::vector<HashFile> FileManager::FindFilesToDelete(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr)
 {
-	std::vector<HashFile> returnArr = FindMissingFiles(serverArr, clientArr);
+	std::vector<HashFile> returnArr;
+	bool found = false;
+
+	for (HashFile& cfile : clientArr)
+	{
+		found = false;
+		for (HashFile& sfile : serverArr)
+		{
+			if (sfile.gethashValue() == cfile.gethashValue())
+			{
+				found = true;
+			}
+		}
+		if (found == false)
+		{
+			returnArr.push_back(cfile);
+		}
+	}
 	return returnArr;
+}
+
+bool FileManager::DeleteFilesFromDir(std::string orginalDir)
+{
+
+	if (std::remove(orginalDir.c_str()) != 0)
+	{
+		bool failed = !std::ifstream(orginalDir);
+		if (failed == true)
+		{
+			std::cout << "cant find file location" << std::endl;
+		}
+		std::cout << "error deleting file" << orginalDir << std::endl;
+	}
+	else
+	{
+		std::cout << "deleting file from " << orginalDir << std::endl;
+	}
+
+	return true;
 }
 
 

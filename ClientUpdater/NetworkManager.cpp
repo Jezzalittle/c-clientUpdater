@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "NetworkManager.h"
 #include "FileList.h"
-#include "IncrementalReadInterface.h"
 #include "FileOperations.h"
 
 
@@ -81,7 +80,7 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 	peerInterface->AttachPlugin(&fileListTransfer);
 
 	//	fileListTransfer.AddCallback(&(TestFileListProgress()));
-	peerInterface->SetSplitMessageProgressInterval(9);
+	//peerInterface->SetSplitMessageProgressInterval(9);
 
 
 
@@ -97,7 +96,7 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 	}
 
 
-	fileList.AddFile(pathToFile.c_str(), pathToFile.c_str(), FileListNodeContext(0, 0, 0, 0));
+	fileList.AddFile(pathToFile.c_str(), "\\FileStructure.txt", FileListNodeContext(0, 0, 0, 0));
 
 }
 
@@ -135,10 +134,9 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 	RakNet::Packet* packet = nullptr;
 
 
+	RakNet::BitStream bs;
 
 	int lineCount = 0;
-	RakNet::BitStream bs;
-	std::string str;
 
 
 	while (true)
@@ -152,6 +150,10 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 		for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
 		{
 			RakNet::BitStream bsIn(packet->data, packet->length, false);
+			std::string str;
+			bs.Reset();
+
+			unsigned short returnID;
 
 
 			switch (packet->data[0])
@@ -163,7 +165,7 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 				std::cout << "A connection is incoming.\n";
 				//	StartWaitingForFileToDownload(packet->systemAddress);
 				bs.Write((RakNet::MessageID)NetworkMsg::ID_SENDFILE);
-				sendID = std::to_string(fileListTransfer.SetupReceive(new FileCB, false, packet->systemAddress));
+				sendID = std::to_string(fileListTransfer.SetupReceive(new FileCB, true, packet->systemAddress));
 
 				bs.Write(sendID);
 				peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
@@ -184,51 +186,90 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 
 				bool succeeded = false;
 				RakNet::SystemAddress addressToSend = packet->systemAddress;
+				std::string SystemAddressStr = addressToSend.ToString();
+				SystemAddressStr.erase(SystemAddressStr.find('|'));
+
 				do
 				{
-					succeeded = FileManager::ReadFromfileStucFileByDir(path + "\\FileStructure_copy.txt", [=](FileManager::HashList&& hashList)
+					succeeded = FileManager::ReadFromfileStucFileByDir(path + "\\FileStructure" + SystemAddressStr + ".txt", [=](FileManager::HashList&& hashList)
 					{
 
 
 						std::vector<HashFile> filesForClient = (FileManager::FindMissingFiles(hashList, returnArr));
-
-
-						RakNet::BitStream bs;
-						bs.Write(ID_CLIENTFILESEND);
-						bs.Write("I have your list of shit");
-						peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressToSend, false);
-
-
+						std::vector<HashFile> filesForClientToDelete(FileManager::FindFilesToDelete(hashList, returnArr));
 						// add the files that are missing
 
 						for (auto& file : filesForClient)
 						{
-							fileList.AddFile(file.getFileLocation().c_str(), file.getFileLocation().c_str(), FileListNodeContext(0, 0, 0, 0));
-							std::cout << file.getFileLocation() << std::endl;
+							if (file.getFileLocation() != "\\FileStructure" + SystemAddressStr + ".txt")
+							{
+								std::string filePath = path + file.getFileLocation();
+								fileList.AddFile(filePath.c_str(), file.getFileLocation().c_str(), FileListNodeContext(0, 0, 0, 0));
+								std::cout << filePath << std::endl;
+							}
 						}
+
+						RakNet::BitStream tempBS;
+
+						tempBS.Write((RakNet::MessageID)NetworkMsg::ID_CLIENTCANFILESBESENT);
+
+						for (auto& file : filesForClientToDelete)
+						{
+							RakNet::RakString writeString = file.gethashValue().c_str();
+							writeString += '%';
+							tempBS.Write(writeString);
+						}
+
+
+						peerInterface->Send(&tempBS, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressToSend, false);
+
+						FileManager::DeleteFilesFromDir(path + "\\FileStructure.txt");
 
 					});
 				} while (succeeded == false);
 
+
 				break;
 			}
-
-
 			case ID_CLIENTFILESEND:
 			{
-				unsigned int returnID;
-				std::cout << "client is ready to get the files\n";
+				unsigned short msg;
+				std::cout << "client is ready to be given the files\n";
 
-				bsIn.IgnoreBits(sizeof(ID_CLIENTFILESEND));
-				bsIn.Read(str);
+				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 
-				returnID = (unsigned short)std::strtoul(str.c_str(), NULL, 0);
+				bsIn.Read(msg);
 
+				fileListTransfer.Send(&fileList, peerInterface, packet->systemAddress, msg, HIGH_PRIORITY, 0);
 
-				fileListTransfer.Send(&fileList, peerInterface, packet->systemAddress, returnID, HIGH_PRIORITY, 0);
+				std::cout << "Files have been sent\n";
 
+				bsIn.Reset();
 
+				RakNet::SystemAddress systemAddress = packet->systemAddress;
+				std::string SystemAddressStr = systemAddress.ToString();
+				SystemAddressStr.erase(SystemAddressStr.find('|'));
+				FileManager::DeleteFilesFromDir(path + "\\FileStructure" + SystemAddressStr + ".txt");
 
+				std::thread waitingForDownload;
+
+				waitingForDownload = std::thread([&, systemAddress]()
+				{
+
+					while (true)
+					{
+						if (finishedDownloading == true)
+						{
+							bs.Write((RakNet::MessageID)NetworkMsg::ID_FILESFINISHED);
+							peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, systemAddress, false);
+							return;
+
+						}
+					}
+
+				});
+
+				waitingForDownload.join();
 
 				break;
 			}
@@ -243,34 +284,37 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 void NetworkManager::UpdateClient()
 {
 	RakNet::Packet* packet;
-	RakNet::BitStream bs;
 	std::string str;
-	RakNet::IncrementalReadInterface incrementalReadInterface;
 	bool waitForReconnect = false;
 
 	std::cout << "the size of the file list is: " << fileList.fileList.Size() << std::endl;
 
 	std::string sendID;
 
+	RakNet::BitStream bs;
 	unsigned short returnID;
 
-	while (true)
+	bool finsished = false;
+
+	while (finsished == false)
 	{
 
 		for (packet = peerInterface->Receive(); packet; peerInterface->DeallocatePacket(packet), packet = peerInterface->Receive())
 		{
 			RakNet::BitStream bsIn(packet->data, packet->length, false);
+			bs.Reset();
+			str = "";
 
 			switch (packet->data[0])
 			{
 			case ID_REMOTE_DISCONNECTION_NOTIFICATION:
-				std::cout << "Another client has disconnected.\n";
+
 				break;
 			case ID_REMOTE_CONNECTION_LOST:
-				std::cout << "Another client has lost the connection.\n";
+
 				break;
 			case ID_REMOTE_NEW_INCOMING_CONNECTION:
-				std::cout << "Another client has connected.\n";
+
 				break;
 			case ID_CONNECTION_REQUEST_ACCEPTED:
 				std::cout << "Our connection request has been accepted.\n";
@@ -279,8 +323,16 @@ void NetworkManager::UpdateClient()
 				std::cout << "The server is full.\n";
 				break;
 			case ID_DISCONNECTION_NOTIFICATION:
+			{
 				std::cout << "We have been disconnected.\n";
+				finsished = true;
+				bs.Reset();
+
+
+
+				return;
 				break;
+			}
 			case ID_CONNECTION_LOST:
 				std::cout << "Connection lost.\n";
 				break;
@@ -307,26 +359,73 @@ void NetworkManager::UpdateClient()
 
 				break;
 			}
-			case ID_CLIENTFILESEND:
+			case ID_CLIENTCANFILESBESENT:
+			{
+				std::cout << "server said its ready to send files\n";
+				std::vector<HashFile> filesToDelete;
+				std::vector<HashFile> clientFiles;
 
-				std::cout << "server said its ready to get files\n";
+				RakNet::RakString filesToDeleteStr;
 
-				sendID = std::to_string(fileListTransfer.SetupReceive(&FileCB(), false, packet->systemAddress));
+				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 
-				bs.Write(ID_CLIENTFILESEND);
+
+				bsIn.Read(filesToDeleteStr);
+
+				int previousPos = 0;
+
+
+				RakNet::RakString fileLoc;
+				RakNet::RakString hashvalue;
+
+				while (filesToDeleteStr.Find("%", previousPos) != std::string::npos)
+				{
+					hashvalue = filesToDeleteStr.SubStr(previousPos, filesToDeleteStr.Find("%", previousPos));
+					hashvalue.Erase(0, 1);
+					HashFile hashFile(hashvalue.C_String());
+					filesToDelete.push_back(hashFile);
+					previousPos = str.find("%", previousPos);
+				}
+
+				clientFiles = FileManager::CreateAllHashFiles(path);
+
+				for (auto& clientFile : clientFiles)
+				{
+					for (auto&  fileToDelete : filesToDelete)
+					{
+						if (clientFile.gethashValue() == fileToDelete.gethashValue())
+						{
+							FileManager::DeleteFilesFromDir(path + clientFile.getFileLocation());
+						}
+					}
+				}
+
+				sendID = std::to_string(fileListTransfer.SetupReceive(new FileCB, true, packet->systemAddress));
+
+
+				bs.Write((RakNet::MessageID)NetworkMsg::ID_CLIENTFILESEND);
 				bs.Write(sendID);
 
 				peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
 
-
-
 				break;
+			}
+			case ID_FILESFINISHED:
+			{	
+				//clean up
+				FileManager::DeleteFilesFromDir(path + "\\FileStructure.txt");
+				
+				peerInterface->CloseConnection(packet->systemAddress, true);
+				break;
+			}
 			default:
 				std::cout << "Received a message with a unknown id: " << packet->data[0];
 				break;
 			}
 		}
 	}
+
+	
 }
 
 

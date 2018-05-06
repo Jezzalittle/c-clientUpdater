@@ -16,28 +16,6 @@
 
 
 
-
-class TestFileListProgress : public RakNet::FileListProgress
-{
-	virtual void OnFilePush(const char *fileName, unsigned int fileLengthBytes, unsigned int offset, unsigned int bytesBeingSent, bool done, RakNet::SystemAddress targetSystem, unsigned short setID)
-	{
-		printf("Sending %s bytes=%i offset=%i\n", fileName, bytesBeingSent, offset);
-	}
-
-	virtual void OnFilePushesComplete(RakNet::SystemAddress systemAddress, unsigned short setID)
-	{
-		char str[32];
-		systemAddress.ToString(true, (char*)str);
-		RAKNET_DEBUG_PRINTF("File pushes complete to %s\n", str);
-	}
-	virtual void OnSendAborted(RakNet::SystemAddress systemAddress)
-	{
-		char str[32];
-		systemAddress.ToString(true, (char*)str);
-		RAKNET_DEBUG_PRINTF("Send aborted to %s\n", str);
-	}
-};
-
 class NetworkManager
 {
 public:
@@ -68,6 +46,10 @@ public:
 		return path;
 	}
 
+	void SetFinishedDownloading(bool value)
+	{
+		finishedDownloading = value;
+	}
 
 
 
@@ -87,15 +69,21 @@ private:
 
 	RakNet::FileList fileList;
 
+	bool finishedDownloading;
+
 
 	enum NetworkMsg
 	{
 		ID_SENDFILE = ID_USER_PACKET_ENUM + 1,
+		ID_CLIENTCANFILESBESENT,
 		ID_CLIENTFILESEND,
+		ID_FILESFINISHED,
 
 	};
 
 };
+
+
 
 class FileCB : public RakNet::FileListTransferCBInterface
 {
@@ -111,8 +99,22 @@ public:
 			onFileStruct->byteLengthOfThisFile,
 			onFileStruct->byteLengthOfThisSet);
 
+		std::string filePath;
+		std::string fileName(onFileStruct->fileName);
+		std::string systemAdress = onFileStruct->senderSystemAddress.ToString();
+		std::size_t found = systemAdress.find('|');
+		systemAdress.erase(found);
 
-		std::string filePath = NetworkManager::GetInstance().GetPath() + "\\FileStructure_copy.txt";
+		if (fileName == "\\FileStructure.txt")
+		{
+			fileName = "\\FileStructure" + systemAdress + ".txt";
+			filePath = NetworkManager::GetInstance().GetPath() + fileName;
+		}
+		else
+		{
+			filePath = NetworkManager::GetInstance().GetPath() + onFileStruct->fileName;
+		}
+
 
 		std::ofstream outFile(filePath, std::ios::out | std::ios::binary);
 
@@ -135,7 +137,7 @@ public:
 	{
 
 		std::cout << "Download complete.\n";
-
+		NetworkManager::GetInstance().SetFinishedDownloading(true);
 		return false;
 	}
 

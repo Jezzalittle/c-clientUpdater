@@ -20,6 +20,11 @@ public:
 		return fileLocation;
 	}
 
+	void SetFileLocation(std::string value)
+	{
+		fileLocation = value;
+	}
+
 	std::string gethashValue()
 	{
 		return hashValue;
