@@ -57,8 +57,13 @@ std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
 
 void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, std::string a_dir)
 {
-	std::ofstream outfile(a_dir);
+	std::ofstream outfile(a_dir + "\\FileStructure.txt");
 
+	if (hashFileArr.size() == 0)
+	{
+		outfile << "";
+		return;
+	}
 	for (auto& hashFile : hashFileArr)
 	{
 		outfile << hashFile.gethashValue() << std::endl;
@@ -110,6 +115,9 @@ bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callb
 
 		callbackFnc(std::move(returnArr));
 	});
+
+	readFromFileThread.detach();
+
 	return true;
 
 }

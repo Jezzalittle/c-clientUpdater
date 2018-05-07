@@ -13,6 +13,9 @@
 #include "HashFile.h"
 #include <iostream>
 #include <fstream>
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 
 
@@ -105,6 +108,10 @@ public:
 		std::size_t found = systemAdress.find('|');
 		systemAdress.erase(found);
 
+		std::string delim = "\\";
+
+		auto next = 2u;
+
 		if (fileName == "\\FileStructure.txt")
 		{
 			fileName = "\\FileStructure" + systemAdress + ".txt";
@@ -112,7 +119,30 @@ public:
 		}
 		else
 		{
-			filePath = NetworkManager::GetInstance().GetPath() + onFileStruct->fileName;
+			filePath = NetworkManager::GetInstance().GetPath();
+			std::string currentString;
+			std::string lastString;
+			while (fileName.find(delim, next) != std::string::npos)
+			{
+				currentString = fileName.substr(0, fileName.find(delim, next));
+				if (currentString == lastString)
+				{
+					break;
+				}
+
+				std::cout << currentString << std::endl;
+				//currentString = currentString.substr(1, currentString.size());
+
+				if (!fs::is_directory(filePath + currentString) || !fs::exists(filePath + currentString))
+				{
+					fs::create_directory(filePath + currentString);
+				}
+
+				next = fileName.find(delim, next + 2);
+				lastString = currentString;
+			}
+
+			filePath += fileName;
 		}
 
 
