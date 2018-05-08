@@ -31,20 +31,20 @@ public:
 	NetworkManager(NetworkManager const&) = delete;
 	void operator=(NetworkManager const&) = delete;
 
-	void Initialise(std::string a_path);
+	void Initialise(std::string& a_path);
 
 	void StartServer(const unsigned short port);
-	void StartClientConnectionToServer(const char* ip, const unsigned short port);
+	bool StartClientConnectionToServer(const char* ip, const unsigned short port);
 	void SendMissingFilesToClient(std::vector<HashFile>& missingFiles);
 
 	void RunClient();
 
 
-	void SetPath(std::string a_path)
+	void SetPath(std::string& a_path)
 	{
 		path = a_path;
 	}
-	std::string GetPath()
+	std::string& GetPath()
 	{
 		return path;
 	}
@@ -119,30 +119,12 @@ public:
 		}
 		else
 		{
-			filePath = NetworkManager::GetInstance().GetPath();
-			std::string currentString;
-			std::string lastString;
-			while (fileName.find(delim, next) != std::string::npos)
-			{
-				currentString = fileName.substr(0, fileName.find(delim, next));
-				if (currentString == lastString)
-				{
-					break;
-				}
+			filePath = NetworkManager::GetInstance().GetPath() + fileName;
+			
+			fs::path path(filePath);
 
-				std::cout << currentString << std::endl;
-				//currentString = currentString.substr(1, currentString.size());
+			fs::create_directories(path.parent_path());
 
-				if (!fs::is_directory(filePath + currentString) || !fs::exists(filePath + currentString))
-				{
-					fs::create_directory(filePath + currentString);
-				}
-
-				next = fileName.find(delim, next + 2);
-				lastString = currentString;
-			}
-
-			filePath += fileName;
 		}
 
 

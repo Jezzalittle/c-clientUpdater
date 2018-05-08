@@ -5,7 +5,7 @@
 
 
 
-void NetworkManager::Initialise(std::string a_path)
+void NetworkManager::Initialise(std::string& a_path)
 {
 	peerInterface = RakNet::RakPeerInterface::GetInstance();
 	path = a_path;
@@ -14,9 +14,6 @@ void NetworkManager::Initialise(std::string a_path)
 
 void NetworkManager::StartServer(const unsigned short port)
 {
-
-
-
 	std::string returnString;
 
 	std::cout << "Opening Socket On Port " << port << std::endl;
@@ -30,13 +27,10 @@ void NetworkManager::StartServer(const unsigned short port)
 	std::cout << "Starting Server\n";
 
 	peerInterface->AttachPlugin(&fileListTransfer);
-	//fileListTransfer.AddCallback(&(TestFileListProgress()));
-	//peerInterface->SetSplitMessageProgressInterval(9);
-
 
 }
 
-void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigned short port)
+bool NetworkManager::StartClientConnectionToServer(const char* ip, const unsigned short port)
 {
 	RakNet::SocketDescriptor sd;
 
@@ -55,9 +49,11 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 
 	int start = clock();
 	double diff;
+	int connectionTrys = 0;
 
 	while (peerInterface->GetConnectionState(RakNet::AddressOrGUID(RakNet::SystemAddress(ip, port))) != RakNet::ConnectionState::IS_CONNECTED)
 	{
+
 		diff = (clock() - start) / (double)(CLOCKS_PER_SEC);
 
 		if (diff > 3.0)
@@ -65,7 +61,12 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 			start = clock();
 
 			std::cout << "Not Connected Yet: " << peerInterface->GetConnectionState(RakNet::AddressOrGUID(RakNet::SystemAddress(ip, port))) << std::endl;
-
+			connectionTrys++;
+			
+			if (connectionTrys >= 5)
+			{
+				return false;
+			}
 
 		}
 	}
@@ -77,10 +78,6 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 	}
 
 	peerInterface->AttachPlugin(&fileListTransfer);
-
-	//	fileListTransfer.AddCallback(&(TestFileListProgress()));
-	//peerInterface->SetSplitMessageProgressInterval(9);
-
 
 
 	std::string pathToFile = path + "\\FileStructure.txt";
@@ -100,7 +97,7 @@ void NetworkManager::StartClientConnectionToServer(const char* ip, const unsigne
 	fileExist.close();
 
 	fileList.AddFile(pathToFile.c_str(), "\\FileStructure.txt", FileListNodeContext(0, 0, 0, 0));
-
+	return true;
 }
 
 
@@ -208,7 +205,7 @@ void NetworkManager::UpdateServer(std::vector<HashFile>& returnArr)
 
 						for (auto& file : filesForClient)
 						{
-							if (file.getFileLocation() != "\\FileStructure" + SystemAddressStr + ".txt")
+							if (file.getFileLocation() != "\\FileStructure" + SystemAddressStr + ".txt" && file.getFileLocation() != "\\Server.exe")
 							{
 								std::string filePath = path + file.getFileLocation();
 								fileList.AddFile(filePath.c_str(), file.getFileLocation().c_str(), FileListNodeContext(0, 0, 0, 0));
@@ -397,11 +394,14 @@ void NetworkManager::UpdateClient()
 
 				for (auto& clientFile : clientFiles)
 				{
-					for (auto& fileToDelete : filesToDelete)
+					if (clientFile.getFileLocation() != "\\Client.exe")
 					{
-						if (clientFile.gethashValue() == fileToDelete.gethashValue())
+						for (auto& fileToDelete : filesToDelete)
 						{
-							FileManager::DeleteFilesFromDir(path + clientFile.getFileLocation());
+							if (clientFile.gethashValue() == fileToDelete.gethashValue())
+							{
+								FileManager::DeleteFilesFromDir(path + clientFile.getFileLocation());
+							}
 						}
 					}
 				}

@@ -3,7 +3,7 @@
 #include "md5Hash.h"
 
 
-HashFile::HashFile(std::string a_fileLocation, std::string a_fileData)
+HashFile::HashFile(std::string& a_fileLocation, const char* a_fileData)
 {
 	fileLocation = a_fileLocation;
 	hashValue = MD5(a_fileLocation).hexdigest();

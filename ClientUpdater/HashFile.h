@@ -12,7 +12,7 @@ public:
 	
 	HashFile() = delete;
 
-	HashFile(std::string a_fileLocation, std::string a_fileData);
+	HashFile(std::string& a_fileLocation, const char* a_fileData);
 	HashFile(std::string a_hash);
 
 	std::string getFileLocation()

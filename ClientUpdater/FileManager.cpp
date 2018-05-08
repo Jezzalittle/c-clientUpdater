@@ -13,7 +13,7 @@ std::thread FileManager::readFromFileThread;
 std::thread FileManager::deleteFileThread;
 
 
-std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
+std::vector<HashFile> FileManager::CreateAllHashFiles(std::string& a_dir)
 {
 	std::vector<HashFile> hashFiles;
 	int amoutOfFiles = 0;
@@ -41,21 +41,19 @@ std::vector<HashFile> FileManager::CreateAllHashFiles(std::string a_dir)
 
 		if (name.substr(a_dir.size(), a_dir.size() - name.size()) != "\FileStructure.txt")
 		{
-			hashFiles.push_back(HashFile(name.substr(a_dir.size(), a_dir.size() - name.size()), fileData));
+			std::string nameDir = name.substr(a_dir.size(), a_dir.size() - name.size());
+			hashFiles.push_back(HashFile(nameDir, fileData.c_str()));
 		}
 
 		currentAmount++;
 
-		fileData.clear();
 	}
 
-
-	//assert(hashFiles.size() > 0);
 	return hashFiles;
 
 }
 
-void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, std::string a_dir)
+void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile>& hashFileArr, std::string& a_dir)
 {
 	std::ofstream outfile(a_dir + "\\FileStructure.txt");
 
@@ -74,7 +72,7 @@ void FileManager::CreateNewFileStucFileInDir(std::vector<HashFile> hashFileArr, 
 }
 
 
-void FileManager::ReadFromfileStucFileByDir(std::string a_dir)
+void FileManager::ReadFromfileStucFileByDir(std::string& a_dir)
 {
 	std::vector<HashFile> returnArr;
 	std::ifstream inFile;
@@ -90,7 +88,7 @@ void FileManager::ReadFromfileStucFileByDir(std::string a_dir)
 	}
 }
 
-bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callbackFnc)
+bool FileManager::ReadFromfileStucFileByDir(const std::string& a_dir, CallbackFnc callbackFnc)
 {
 	if (readFromFileThread.joinable())
 	{
@@ -122,7 +120,7 @@ bool FileManager::ReadFromfileStucFileByDir(std::string a_dir, CallbackFnc callb
 
 }
 
-std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr)
+std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile>& clientArr, std::vector<HashFile> serverArr)
 {
 	std::vector<HashFile> returnArr;
 	bool found = false;
@@ -146,7 +144,7 @@ std::vector<HashFile> FileManager::FindMissingFiles(std::vector<HashFile> client
 	return returnArr;
 }
 
-std::vector<HashFile> FileManager::FindFilesToDelete(std::vector<HashFile> clientArr, std::vector<HashFile> serverArr)
+std::vector<HashFile> FileManager::FindFilesToDelete(std::vector<HashFile>& clientArr, std::vector<HashFile> serverArr)
 {
 	std::vector<HashFile> returnArr;
 	bool found = false;
