@@ -23,32 +23,46 @@ class NetworkManager
 {
 public:
 
+	//Get an instance
 	static NetworkManager& GetInstance()
 	{
 		static NetworkManager instance;
 		return instance;
 	}
+
+
 	NetworkManager(NetworkManager const&) = delete;
 	void operator=(NetworkManager const&) = delete;
 
+
+	//Call before anything else and pass the path we are in
 	void Initialise(std::string& a_path);
 
+	//Starts a Server Socket on port
 	void StartServer(const unsigned short port);
+
+	//Starts a Client Socket on port and tries to connect to the Server with IP
 	bool StartClientConnectionToServer(const char* ip, const unsigned short port);
+
+	//Send missing files from server to client
 	void SendMissingFilesToClient(std::vector<HashFile>& missingFiles);
 
+	//Run client waiting for servers files
 	void RunClient();
 
-
+	//A path to the solution directory
 	void SetPath(std::string& a_path)
 	{
 		path = a_path;
 	}
+	
+	//A path to the solution directory
 	std::string& GetPath()
 	{
 		return path;
 	}
 
+	//Finished Downloading?
 	void SetFinishedDownloading(bool value)
 	{
 		finishedDownloading = value;
@@ -87,10 +101,12 @@ private:
 };
 
 
-
+//Callback class not for user
 class FileCB : public RakNet::FileListTransferCBInterface
 {
 public:
+
+	//Callback function not for user
 	bool OnFile(OnFileStruct* onFileStruct)
 	{
 
@@ -139,12 +155,14 @@ public:
 		return true;
 	}
 
+	//Callback function not for user
 	virtual void OnFileProgress(FileProgressStruct *fps)
 	{
 
 		std::cout << fps->partCount << "/" << fps->partTotal << std::endl;
 	}
-
+	
+	//Callback function not for user
 	virtual bool OnDownloadComplete(DownloadCompleteStruct *dcs)
 	{
 

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Application.h"
 #include "FileManager.h"
 
